@@ -30,7 +30,7 @@ public class GameService {
             Team tHome = teamService.getTeam(home);
             Team tAway = teamService.getTeam(away);
 
-            Page<Game> games = gameRepository.findByHomeAndAway(tHome, tAway, pageable);
+            Page<Game> games = gameRepository.findByHomeIdAndAwayId(tHome.getIdentifier(), tAway.getIdentifier(), pageable);
             return games.map(game -> GameReturnDTO.covert(game));
 
         } else if (attendance != null) {
@@ -42,7 +42,6 @@ public class GameService {
     }
 
     public GameReturnDTO saveGame(SaveGameDTO saveGameDTO) {
-
         Team teamM = teamService.getTeam(saveGameDTO.getHome());
         Team teamV = teamService.getTeam(saveGameDTO.getAway());
 
@@ -52,8 +51,8 @@ public class GameService {
 
         Game game = new Game();
         game.setIdentifier(UUID.randomUUID().toString());
-        game.setHome(teamM);
-        game.setAway(teamV);
+        game.setHomeId(teamM.getIdentifier());
+        game.setAwayId(teamV.getIdentifier());
         game.setAttendance(0);
         game.setScoreHome(0);
         game.setScoreAway(0);

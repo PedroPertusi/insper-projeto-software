@@ -2,6 +2,8 @@ package com.insper.partida.game.dto;
 
 import com.insper.partida.equipe.dto.TeamReturnDTO;
 import com.insper.partida.game.Game;
+import com.insper.partida.game.GameRepository;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,8 +20,8 @@ public class GameReturnDTO {
     private LocalDateTime gameDate;
     private String status;
 
-    private TeamReturnDTO home;
-    private TeamReturnDTO away;
+    private String home;
+    private String away;
 
     public static GameReturnDTO covert(Game game) {
         GameReturnDTO gameReturnDTO = new GameReturnDTO();
@@ -29,8 +31,8 @@ public class GameReturnDTO {
         gameReturnDTO.setStatus(game.getStatus());
         gameReturnDTO.setScoreAway(game.getScoreAway());
         gameReturnDTO.setScoreHome(game.getScoreHome());
-        gameReturnDTO.setHome(TeamReturnDTO.covert(game.getHome()));
-        gameReturnDTO.setAway(TeamReturnDTO.covert(game.getAway()));
+        gameReturnDTO.setHome(game.getHomeId());
+        gameReturnDTO.setAway(game.getAwayId());
         return gameReturnDTO;
     }
 
