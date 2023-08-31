@@ -16,10 +16,15 @@ import java.util.*;
 public class ReportController {
 
     @Autowired
-    private GameRepository gameRepository;
+    private Cache cache;
 
     @Autowired
     private TeamRepository teamRepository;
+
+    @Autowired
+    private GameRepository gameRepository;
+
+    
 
     @GetMapping("/numbers")
     public HashMap<Integer,Integer> getInts(@RequestParam("amount") Integer amount) {
@@ -29,17 +34,13 @@ public class ReportController {
         for (int i = 0; i < amount; i++) {
             nums.add(ran.nextInt(100));
         }
-
+        //algoritimo ineficiente (arrumei ja)
         HashMap<Integer, Integer> count = new HashMap<>();
-        for (int i = 0; i < 100; i++) {
-            for (int j = 0 ; j < nums.size(); j++) {
-                if (nums.get(j) == i) {
-                    count.merge(i, 1, Integer::sum);
-                }
+        for (int j = 0 ; j < nums.size(); j++) {
+                count.merge(nums.get(j), 1, Integer::sum);
             }
-        }
         return count;
-    }
+        }
 
     @GetMapping("/tenGamesHomeByTeam")
     public List<GameReturnDTO> getTenGamesHomeByTeam(@RequestParam(name = "team") String team) {
@@ -49,12 +50,7 @@ public class ReportController {
             throw new RuntimeException("Time não encontrado");
         }
 
-        List<Game> games = gameRepository
-                .findAll()
-                .stream()
-                .filter(g -> g.getHome().equals(team) || g.getAway().equals(team))
-                .limit(10)
-                .toList();
+        List<Game> games = gameRepository.findTop10ByHomeOrAway(team);
 
         return games.stream().map(g -> GameReturnDTO.covert(g)).toList();
 
@@ -64,7 +60,7 @@ public class ReportController {
     public List<GameReturnDTO> getAllTeams(@RequestParam(name = "team") List<String> teams) {
 
         for (String team : teams) {
-            Team teamDB = teamRepository.findByIdentifier(team);
+            Team teamDB = cache.getTeam(team);
             if (teamDB == null) {
                 throw new RuntimeException("Time não encontrado");
             }
@@ -72,14 +68,8 @@ public class ReportController {
 
         List<Game> allGames = new ArrayList<>();
 
-        for (String team : teams) {
-            List<Game> games = gameRepository
-                    .findAll()
-                    .stream()
-                    .filter(g -> g.getHome().equals(team) || g.getAway().equals(team))
-                    .limit(10)
-                    .toList();
-
+        for (String team : teams) { //loop dando find all é dificil, tem como dar um query com IN passando uma lista de times
+            List<Game> games = gameRepository.findTop10ByHomeOrAway(team);
             allGames.addAll(games);
         }
 
@@ -91,7 +81,7 @@ public class ReportController {
     public HashMap<String, Integer>  getPointsByTeam(@RequestParam(name = "team") List<String> teams) {
 
         for (String team : teams) {
-            Team teamDB = teamRepository.findByIdentifier(team);
+            Team teamDB = cache.getTeam(team);
             if (teamDB == null) {
                 throw new RuntimeException("Time não encontrado");
             }
@@ -107,9 +97,9 @@ public class ReportController {
                     .toList();
 
             Optional<Integer> points = games
-                    .stream()
-                    .map(g -> numPoints(g, team))
-                    .reduce((a, p) -> a + p);
+                .stream() // Inicia uma stream para processar a lista de jogos
+                .map(g -> numPoints(g, team)) // Transforma cada jogo em pontos usando a função numPoints
+                .reduce((a, p) -> a + p); // Reduz os pontos acumulados somando-os em um único valor
             teamPoints.put(team, points.get());
 
         }
