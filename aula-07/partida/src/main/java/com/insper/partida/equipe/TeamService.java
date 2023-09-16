@@ -39,6 +39,6 @@ public class  TeamService {
     }
 
     public Team getTeam(String identifier) {
-        return teamRepository.findByIdentifier(identifier);
+        return teamRepository.findFirstByIdentifier(identifier);
     }
 }

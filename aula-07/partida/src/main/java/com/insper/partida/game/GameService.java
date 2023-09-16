@@ -3,10 +3,13 @@ package com.insper.partida.game;
 import com.insper.partida.equipe.Team;
 import com.insper.partida.equipe.TeamService;
 import com.insper.partida.equipe.dto.SaveTeamDTO;
-import com.insper.partida.equipe.dto.TeamReturnDTO;
+
 import com.insper.partida.game.dto.EditGameDTO;
 import com.insper.partida.game.dto.GameReturnDTO;
 import com.insper.partida.game.dto.SaveGameDTO;
+import com.insper.partida.tabela.Tabela;
+import com.insper.partida.tabela.TabelaRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +30,9 @@ public class GameService {
     @Autowired
     private TeamService teamService;
 
+    @Autowired
+    private TabelaRepository tabelaRepository;
+
     public Page<GameReturnDTO> listGames(String home, String away, Integer attendance, Pageable pageable) {
         if (home != null && away != null) {
 
@@ -45,18 +51,36 @@ public class GameService {
     }
 
     public GameReturnDTO saveGame(SaveGameDTO saveGameDTO) {
-
         Team teamM = teamService.getTeam(saveGameDTO.getHome());
         Team teamV = teamService.getTeam(saveGameDTO.getAway());
+        Tabela tabelaV;
+        Tabela tabelaM;
 
         if (teamM == null || teamV == null) {
             return null;
         }
 
+        if (tabelaRepository.findFirstByNome(teamV.getName()) == null) {
+            tabelaM = new Tabela();
+            tabelaM.setNome(teamM.getName());
+        }
+        else {
+            tabelaM = tabelaRepository.findFirstByNome(teamV.getName());
+        }
+
+
+        if (tabelaRepository.findFirstByNome(teamV.getName()) == null) {
+            tabelaV = new Tabela();
+            tabelaV.setNome(teamV.getName());
+        }
+        else {
+            tabelaV = tabelaRepository.findFirstByNome(teamV.getName());
+        }
+
         Game game = new Game();
         game.setIdentifier(UUID.randomUUID().toString());
-        game.setHome(teamM.getIdentifier());
-        game.setAway(teamV.getIdentifier());
+        game.setHome(saveGameDTO.getHome());
+        game.setAway(saveGameDTO.getAway());
         game.setAttendance(0);
         game.setScoreHome(0);
         game.setScoreAway(0);
@@ -64,6 +88,9 @@ public class GameService {
         game.setStatus("SCHEDULED");
 
         gameRepository.save(game);
+        tabelaRepository.save(tabelaV);
+        tabelaRepository.save(tabelaM);
+  
         return GameReturnDTO.covert(game);
 
     }
@@ -75,7 +102,38 @@ public class GameService {
         gameBD.setScoreHome(editGameDTO.getScoreHome());
         gameBD.setAttendance(editGameDTO.getAttendance());
         gameBD.setStatus("FINISHED");
+        
+        Tabela tabelaA = tabelaRepository.findFirstByNome(teamService.getTeam(gameBD.getAway()).getName());
+        Tabela tabelaH = tabelaRepository.findFirstByNome(teamService.getTeam(gameBD.getHome()).getName());
+        tabelaA.setJogos(tabelaA.getJogos() + 1);
+        tabelaH.setJogos(tabelaH.getJogos() + 1);
 
+        if (editGameDTO.getScoreAway() == editGameDTO.getScoreHome()) {
+            tabelaA.setPontos(tabelaA.getPontos() + 1);
+            tabelaH.setPontos(tabelaH.getPontos() + 1);
+            tabelaA.setEmpates(tabelaA.getEmpates() + 1);
+            tabelaH.setEmpates(tabelaH.getEmpates() + 1);
+        }
+        else if (editGameDTO.getScoreAway() > editGameDTO.getScoreHome()) {
+            tabelaA.setPontos(tabelaA.getPontos() + 3);
+            tabelaA.setVitorias(tabelaA.getVitorias() + 1);
+            tabelaH.setDerrotas(tabelaH.getDerrotas() + 1);
+        }
+        else {
+            tabelaH.setPontos(tabelaH.getPontos() + 3);
+            tabelaH.setVitorias(tabelaH.getVitorias() + 1);
+            tabelaA.setDerrotas(tabelaA.getDerrotas() + 1);
+        }
+
+        
+        tabelaA.setGolsPro(tabelaA.getGolsPro() + editGameDTO.getScoreAway());
+        tabelaA.setGolsContra(tabelaA.getGolsContra() + editGameDTO.getScoreHome());
+
+        tabelaH.setGolsPro(tabelaH.getGolsPro() + editGameDTO.getScoreHome());
+        tabelaH.setGolsContra(tabelaH.getGolsContra() + editGameDTO.getScoreAway());
+
+        tabelaRepository.save(tabelaH);
+        tabelaRepository.save(tabelaA);
         Game game = gameRepository.save(gameBD);
         return GameReturnDTO.covert(game);
     }
@@ -89,7 +147,6 @@ public class GameService {
 
     public Integer getScoreTeam(String identifier) {
         Team team = teamService.getTeam(identifier);
-
         return 0;
     }
 
@@ -114,31 +171,31 @@ public class GameService {
             }
         }
 
-        List<Game> games = new ArrayList<>();
-
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
 
             Integer team1 = new Random().nextInt(20);
             Integer team2 = new Random().nextInt(20);
             while  (team1 == team2) {
                 team2 = new Random().nextInt(20);
             }
+            
+            SaveGameDTO ng = new SaveGameDTO();
+            ng.setAway(teams[team1]);
+            ng.setHome(teams[team2]);
+            GameReturnDTO g = saveGame(ng);
 
-            Game game = new Game();
-            game.setHome(teams[team1]);
-            game.setAway(teams[team2]);
-            game.setScoreHome(new Random().nextInt(4));
-            game.setScoreAway(new Random().nextInt(4));
+            EditGameDTO eGameDTO = new EditGameDTO();
+            eGameDTO.setScoreAway(new Random().nextInt(4));
+            eGameDTO.setScoreHome(new Random().nextInt(4));
+            eGameDTO.setAttendance(new Random().nextInt(4) * 1000);
+            GameReturnDTO gr = editGame(g.getIdentifier(), eGameDTO);
+
+            Game game = gameRepository.findByIdentifier(gr.getIdentifier());
             game.setStadium(teams[team1]);
-            game.setAttendance(new Random().nextInt(4) * 1000);
+            System.out.println(i);
 
-            games.add(game); //usa mta memória mas tempo de execucao rapido, gamerepository.save --> demora muito mas usa pouca memória 
-
+            gameRepository.save(game);
         }
-
-        gameRepository.saveAll(games);
-
-
     }
 
     public List<Game> getGameByTeam(String identifier) {

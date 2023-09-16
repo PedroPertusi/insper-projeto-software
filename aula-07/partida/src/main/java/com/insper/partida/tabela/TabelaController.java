@@ -15,7 +15,7 @@ public class TabelaController {
     private TabelaService tabelaService;
 
     @GetMapping
-    public List<TimeDTO> setTabela() {
+    public List<Tabela> setTabela() {
         return tabelaService.getTabela();
     }
 
