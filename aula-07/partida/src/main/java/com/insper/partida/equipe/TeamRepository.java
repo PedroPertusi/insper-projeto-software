@@ -8,4 +8,6 @@ public interface TeamRepository extends MongoRepository<Team, String> {
     Team findByIdentifier(String identifier);
 
     Team findFirstByIdentifier(String identifier);
+
+    Boolean existsByIdentifier(String identifier);
 }
