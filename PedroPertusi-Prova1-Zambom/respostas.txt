@@ -1,0 +1,45 @@
+RESPOSTAS PROVA: PEDRO PERTUSI 25/09/2023
+
+1- Identifique 3 problemas de desempenho/escalabilidade nas rotas da aplicação:
+
+1. A rota getEntrega() implementada no EntregasService tem o objetivo de receber um identificador de uma entrega, realizar a busca no banco e então
+retornar (se exisitr) uma entrega com o identificador correspondente. O problema de desempenho/escalabilidade em questão aqui é justamente como
+essa busca é feita no banco de dados, aonde na rota foi optado por um findAll no banco e depois um filtro manual em todos os dados. Isso pode se 
+tornar um problema especialmente quando estamos falando de bancos de dados gigantes, uma opção melhor para tal seria criar no próprio 
+EntregasRepository uma função findByIdentifier(String identifier), que retorna a entrega que possui tal identificador ou nulo se ela não existir,
+e assim usá-la no lugar, permitindo que assim a consulta e busca fosse feita de forma efetiva no próprio banco sem necessidade de algo manual.
+
+2. A rota deleteEntregas() apresenta o mesmo problema de desempenho da rota descrita anteriormente (getEntregas()) aonde com o objetivo de deletar
+uma entrega específica a partir de um identificador passado, ele acaba pegando todas as entregas e fazendo uma filtragem manual gerando assim um 
+problema de desempenho na rota, especialmente se estivermos falando de uma quantidade grande de dados. Para resolver seria igual a anterior, 
+poderiamos criar e usar uma função no EntregasRepository chamada findByIdentifier(String identifier) a entrega que possui tal identificador 
+ou nulo se ela não existir, e assim usá-la no lugar, permitindo que assim a consulta e busca fosse feita de forma efetiva no próprio banco 
+sem necessidade de algo manual, e depois então deletar a mesma se elá existir. 
+
+3. A rota getEntregasMaiorMinimo() implementa uma rota que retorna todas as entregas que possuírem uma distância maior que a passada pelo usuário,
+o problema de desempenho aqui é novamente que ele faz uma query no banco de dados pegando todas as entregas e depois realiza uma filtragem manual
+levendo em conta o mínimo recebido para assim então retornar uma lista com todas as entregas que possuírem uma distância maior, isso se torna um 
+problema novamente quando estamos falando de muitos dados, podendo fazer assim a rota demorar muito tempo. Uma possível solução novamente seria 
+criar uma função no EntregasRepository ela seria: List<Entrega> findByDistanciaGreaterThan(Float minimo); , dessa maneira ao ser chamada ela
+realisaria a própria consulta e filtragem no banco de dados devolvendo assim a lista das entregas aonde o campo distancia é maior que o valor 
+mínimo recebido, antes de retornar tal lista seria apenas necessária convertar as mesmas entregas para EntregaDTO e pronto. 
+
+2- Identifique 3 problemas de confiabilidade nas rotas da aplicação
+
+1. Um probleam de confiabilidade está presente na rota de saveEntrega, o problema aqui é que a rota apenas recebe o entregaDTO enviado a ela,
+atribui um identificador aleátorio e salva tal no banco. O problema aqui vem do fato de nenhum tratamento ser realizado na mesma, ou seja, alguem 
+poderia simplesmente mandar uma entrgea incompleta que o mesmo seria salvo no banco. Uma possível solução para o mesmo seria então tratar os casos, 
+claro que isso seria de acordo com as necessidades de quem usa a aplicação, mas por exemplo verificar se o cpf e a distancia foram recebidas, se o 
+número passado no campo do cpf realmente é um cpf e assim por diante, de acordo com as necessidades.
+
+2. Outro problema de confiabilidade presente é o retorno da rota de deletagem, aonde o mesmo retorno HTTP 200 é retornado para casos aonde a entrega
+correspondente ao identificador foi encontrado e deletado, ou simplesmente se ele não encontrou e não deletou, isso é portanto uma falha de 
+confiabilidade e uma boa prática para retorno seria por exemplo retornar o código de status HTTP 404 (Not Found) caso nenhuma entrega com o 
+identificador fosse encontrada (e logo nada seria deletado) e algo como HTTP 204 (No content), que é usada justamente para casos em que a rota
+não retorna nada, apenas que sua função executada foi bem sucedida (nesse caso deletar algo do banco).
+
+3. Outra rota que possui um problema de confiabilidade semelhante a anterior é a rota getEntrega que retornara o HTTP status 200 tanto quando a 
+entrega for encontrada ou não, sendo assim pouco informativa para quem utiliza a mesma. Para resolver esse problema seria legal algo semelhante 
+a anterior aonde realizariamos um tratamento para verificar se a entrega existe, e caso a mesma não exista, retornamos então um código HTTP 404
+(Not found), e ai sim para o caso em que a entrega foi encontrada e retornada com sucesso retornamos então o 200 (OK) e o corpo da resposta contendo
+os detalhes então da tal entrega.
