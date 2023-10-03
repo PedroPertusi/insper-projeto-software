@@ -1,8 +1,6 @@
-package com.insper.partida.equipe;
+package com.insper.partida.game;
 
-import com.insper.partida.common.ErrorDTO;
-import com.insper.partida.equipe.exception.TeamAlreadyExistsException;
-import com.insper.partida.equipe.exception.TeamDoesntExistException;
+import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -10,15 +8,17 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-import java.time.LocalDateTime;
+import com.insper.partida.common.ErrorDTO;
+import com.insper.partida.game.exception.GameDoesntExistException;
+import com.insper.partida.game.exception.GameSameTeamException;
 
 @ControllerAdvice
-public class TeamControllerAdvice {
+public class GameControllerAdvice {
 
-    @ExceptionHandler(TeamAlreadyExistsException.class)
+    @ExceptionHandler(GameSameTeamException.class)
     @ResponseBody
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDTO teamAlreadyExistsException(TeamAlreadyExistsException ex) {
+    public ErrorDTO gameSameTeamException(GameSameTeamException ex) {
         ErrorDTO error = new ErrorDTO();
         error.setMessage(ex.getMessage());
         error.setCode(400);
@@ -26,10 +26,10 @@ public class TeamControllerAdvice {
         return error;
     }
 
-    @ExceptionHandler(TeamDoesntExistException.class)
+    @ExceptionHandler(GameDoesntExistException.class)
     @ResponseBody
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorDTO teamDoesntExistException(TeamDoesntExistException ex) {
+    public ErrorDTO gameDoesntExistException(GameDoesntExistException ex) {
         ErrorDTO error = new ErrorDTO();
         error.setMessage(ex.getMessage());
         error.setCode(404);
@@ -37,4 +37,6 @@ public class TeamControllerAdvice {
         return error;
     }
 
+
+    
 }

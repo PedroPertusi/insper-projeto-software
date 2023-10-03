@@ -1,12 +1,16 @@
 package com.insper.partida.game;
 
 import com.insper.partida.equipe.Team;
+import com.insper.partida.equipe.TeamRepository;
 import com.insper.partida.equipe.TeamService;
 import com.insper.partida.equipe.dto.SaveTeamDTO;
 import com.insper.partida.equipe.dto.TeamReturnDTO;
+import com.insper.partida.equipe.exception.TeamDoesntExistException;
 import com.insper.partida.game.dto.EditGameDTO;
 import com.insper.partida.game.dto.GameReturnDTO;
 import com.insper.partida.game.dto.SaveGameDTO;
+import com.insper.partida.game.exception.GameDoesntExistException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,11 +31,22 @@ public class GameService {
     @Autowired
     private TeamService teamService;
 
+    @Autowired
+    private TeamRepository  TeamRepository;
+
     public Page<GameReturnDTO> listGames(String home, String away, Integer attendance, Pageable pageable) {
         if (home != null && away != null) {
 
             Team tHome = teamService.getTeam(home);
             Team tAway = teamService.getTeam(away);
+
+            if (tHome == null || tAway == null) {
+                throw new TeamDoesntExistException();
+            }
+
+            if (tHome.getIdentifier().equals(tAway.getIdentifier())) {
+                throw new RuntimeException("O time mandante não pode ser igual ao time visitante");
+            }
 
             Page<Game> games = gameRepository.findByHomeAndAway(tHome.getIdentifier(), tAway.getIdentifier(), pageable);
             return games.map(game -> GameReturnDTO.covert(game));
@@ -50,10 +65,12 @@ public class GameService {
         Team teamV = teamService.getTeam(saveGameDTO.getAway());
 
         if (teamM == null || teamV == null) {
-            return null; // enviar a mensagem de erro correta
-        }
+                throw new TeamDoesntExistException();
+            }
 
-        // validar se o time mandante é diferente do visitante
+        if (teamM.getIdentifier().equals(teamV.getIdentifier())) {
+            throw new RuntimeException("O time mandante não pode ser igual ao time visitante");
+        }
 
         Game game = new Game();
         game.setIdentifier(UUID.randomUUID().toString());
@@ -73,7 +90,9 @@ public class GameService {
     public GameReturnDTO editGame(String identifier, EditGameDTO editGameDTO) {
         Game gameBD = gameRepository.findByIdentifier(identifier);
 
-        // verificasr se o jogo existe
+        if (gameBD == null) {
+            throw new GameDoesntExistException();
+        }
 
         gameBD.setScoreAway(editGameDTO.getScoreAway());
         gameBD.setScoreHome(editGameDTO.getScoreHome());
@@ -89,7 +108,9 @@ public class GameService {
         if (gameBD != null) {
             gameRepository.delete(gameBD);
         }
-        //verificar se o jogo existe
+        else {
+            throw new GameDoesntExistException();
+        }
     }
 
     public Integer getScoreTeam(String identifier) {
@@ -100,7 +121,9 @@ public class GameService {
 
     public GameReturnDTO getGame(String identifier) {
 
-        // verificar se o gaame existe
+        if (!gameRepository.existsByIdentifier(identifier)) {
+            throw new GameDoesntExistException();
+        }
         return GameReturnDTO.covert(gameRepository.findByIdentifier(identifier));
     }
 
@@ -150,6 +173,9 @@ public class GameService {
     }
 
     public List<Game> getGameByTeam(String identifier) {
+        if (!TeamRepository.existsByIdentifier(identifier)) {
+            throw new TeamDoesntExistException();
+        }
         return gameRepository.findByHomeOrAway(identifier, identifier);
     }
 }

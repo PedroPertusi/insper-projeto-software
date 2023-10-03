@@ -18,6 +18,8 @@ public interface GameRepository extends MongoRepository<Game, String> {
 
     List<Game> findByHomeOrAway(String identifier, String identifier1);
 
+    Boolean existsByIdentifier(String identifier);
+
 
     //@Query("select sum(g.scoreHome) from Game g where g.home = ?1")
     //public Integer sumScoreTeamHome(Team team);
