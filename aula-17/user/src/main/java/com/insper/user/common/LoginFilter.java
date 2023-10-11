@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import com.insper.user.user.LoginService;
 import com.insper.user.user.UserService;
+import com.insper.user.user.dto.ReturnUserDTO;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -19,9 +21,10 @@ import java.util.List;
 public class LoginFilter implements Filter {
 
     @Autowired
-    private UserService userService;
+    private LoginService loginService;
 
-    List<String> openRoutes = Arrays.asList("/user");
+    List<String> openRoutesGET = Arrays.asList("/user");
+    List<String> openRoutesPOST = Arrays.asList("/login");
 
     @Override
     public void doFilter(
@@ -31,18 +34,28 @@ public class LoginFilter implements Filter {
 
         HttpServletRequest req = (HttpServletRequest) request;
         
-        String email = req.getHeader("email");
-        String password = req.getHeader("password");
+        String token = req.getHeader("token");
 
         String uri = req.getRequestURI();
         String method = req.getMethod();
 
-        if (method.equals("GET") && openRoutes.contains(uri)) {
+        if (method.equals("GET") && openRoutesGET.contains(uri)) {
+            chain.doFilter(request, response);
+        }
+        else if (method.equals("POST") && openRoutesPOST.contains(uri)) {
+            chain.doFilter(request, response);
+        }
+        else if (method.equals("GET") && uri.startsWith("/login/token")) {
             chain.doFilter(request, response);
         }
         else {
-            userService.validateUser(email, password);
-            chain.doFilter(request, response);
+            ReturnUserDTO user = loginService.get(token);   
+            if (user == null) {
+                throw new RuntimeException("User not found (HTTPS 404)");
+            }
+            else {
+                chain.doFilter(request, response);
+            }
         }
     }
 

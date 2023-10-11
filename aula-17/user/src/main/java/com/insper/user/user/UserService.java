@@ -2,7 +2,6 @@ package com.insper.user.user;
 
 import com.insper.user.user.dto.ReturnUserDTO;
 import com.insper.user.user.dto.SaveUserDTO;
-import org.apache.tomcat.util.security.MD5Encoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
@@ -34,12 +33,12 @@ public class UserService {
         return ReturnUserDTO.convert(userRepository.save(user));
     }
 
-    public boolean validateUser(String email, String password) {
+    public ReturnUserDTO validateUser(String email, String password) {
         String encoded = DigestUtils.md5DigestAsHex(password.getBytes()).toUpperCase();
-        boolean exst = userRepository.existsByEmailAndPassword(email, encoded);
-        if (!exst) {
+        User user = userRepository.findByEmailAndPassword(email, encoded);
+        if (user == null) {
             throw new RuntimeException("User not authorized (HTTPS 401)");
         }
-        return exst;
+        return ReturnUserDTO.convert(user);
     }
 }
