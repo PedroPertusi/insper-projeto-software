@@ -19,9 +19,13 @@ public class MongoUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserMongo userMongo = userRepository.findByEmail(username);
 
+        if (userMongo == null)
+            throw new UsernameNotFoundException("User not found");
+
         return User.builder()
                 .username(userMongo.getEmail())
                 .password(userMongo.getPassword())
+                .disabled(userMongo.getDisabled())
                 .roles(userMongo.getRoles().toArray(String[]::new))
                 .build();
     }

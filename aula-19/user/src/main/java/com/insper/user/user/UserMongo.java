@@ -17,4 +17,5 @@ public class UserMongo {
     private String email;
     private String password;
     private List<String> roles;
+    private Boolean disabled;
 }
